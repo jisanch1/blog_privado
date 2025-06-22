@@ -7,7 +7,9 @@ __pycache__/
 venv/
 *.env
 .idea/ # Directorio de configuración de PyCharm/IntelliJ (si lo usaras)
+
 *.sqlite3 # Base de datos SQLite (¡no subir a Git!)
+db.sqlite3
 
 # Django specific
 *.log
