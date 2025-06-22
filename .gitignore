@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+venv/
+*.env
+.idea/ # Directorio de configuración de PyCharm/IntelliJ (si lo usaras)
+*.sqlite3 # Base de datos SQLite (¡no subir a Git!)
+
+# Django specific
+*.log
+local_settings.py # Si tuvieras un archivo de configuración local con secretos
+media/ # Directorio para archivos subidos por usuarios (si lo usaras)
+
+# IDEs
+.vscode/ # Configuración de VS Code específica del usuario (a veces quieres ignorar esto)
+
+# Environment variables
+.env # Archivos .env para variables de entorno (¡nunca subir!)
+
+# Operating System files
+.DS_Store # macOS
+Thumbs.db # Windows
