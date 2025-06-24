@@ -21,6 +21,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from blog import views as blog_views # Importa las vistas de tu app 'blog'
 from rest_framework.authtoken.views import obtain_auth_token # Para la autenticación por token
+from django.views.generic import TemplateView
 
 # Crea un router para tus ViewSets
 router = DefaultRouter()
@@ -33,4 +34,5 @@ urlpatterns = [
     path('api/', include(router.urls)), # Incluye las URLs generadas por el router de DRF
     path('api-auth/', include('rest_framework.urls')), # Opcional: URLs para el login/logout en el navegador de DRF
     path('api/token-auth/', obtain_auth_token), # Endpoint para obtener un token de autenticación
+    path('', TemplateView.as_view(template_name='blog/html/index.html')), # ¡Nueva ruta para servir tu index.html!
 ]

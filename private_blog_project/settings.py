@@ -44,12 +44,17 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication', # Autenticación por token
-        'rest_framework.authentication.SessionAuthentication', # Para el navegador de DRF
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly' # Permiso por defecto global (puedes sobrescribir)
-    ]
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly'
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata'
 }
 
 MIDDLEWARE = [
@@ -67,7 +72,9 @@ ROOT_URLCONF = 'private_blog_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'blog' / 'static',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,6 +134,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Directorios adicionales donde Django buscará archivos estáticos
+STATICFILES_DIRS = [
+    BASE_DIR / 'blog' / 'static', # Esto apunta a my_private_blog/blog/static
+]
+
+# Directorio donde Django recogerá todos los archivos estáticos para producción
+STATIC_ROOT = BASE_DIR / 'staticfiles' # Se creará más tarde para despliegue
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -1,60 +1,76 @@
+# blog/serializers.py
+
 from rest_framework import serializers
 from .models import Post, Comment, Reaction
 from django.contrib.auth.models import User
+# ¡Nuevas importaciones necesarias para manejar GenericRelations!
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation # Puede que no sea estrictamente necesaria aquí si solo accedes, pero es buena práctica
+
 
 class UserSerializer(serializers.ModelSerializer):
-    # Este serializador es para mostrar información básica del usuario (autor de posts/comentarios)
     class Meta:
         model = User
-        fields = ['id', 'username'] # Solo exponemos el ID y el nombre de usuario
+        fields = ['id', 'username']
 
 class PostSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True) # Usa el UserSerializer para el autor
-    # Incluimos un campo para el número de likes/dislikes (lo calcularemos más adelante)
+    author = UserSerializer(read_only=True)
     likes_count = serializers.SerializerMethodField()
     dislikes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ['id', 'title', 'content', 'author', 'created_at', 'updated_at', 'likes_count', 'dislikes_count']
-        read_only_fields = ['author'] # El autor se asignará automáticamente en la vista
+        read_only_fields = ['author']
 
     def get_likes_count(self, obj):
-        # Contar reacciones de "Me Gusta" para este post
-        return obj.reaction_set.filter(is_like=True).count()
+        # Accede a las reacciones a través del ContentType del Post y el ID del objeto
+        post_content_type = ContentType.objects.get_for_model(Post)
+        return Reaction.objects.filter(
+            content_type=post_content_type,
+            object_id=obj.id,
+            is_like=True
+        ).count()
 
     def get_dislikes_count(self, obj):
-        # Contar reacciones de "No Me Gusta" para este post
-        return obj.reaction_set.filter(is_like=False).count()
+        post_content_type = ContentType.objects.get_for_model(Post)
+        return Reaction.objects.filter(
+            content_type=post_content_type,
+            object_id=obj.id,
+            is_like=False
+        ).count()
 
 class CommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    # Incluimos un campo para el número de likes/dislikes (lo calcularemos más adelante)
     likes_count = serializers.SerializerMethodField()
     dislikes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
         fields = ['id', 'post', 'author', 'content', 'created_at', 'likes_count', 'dislikes_count']
-        read_only_fields = ['author'] # El autor se asignará automáticamente en la vista
+        read_only_fields = ['author']
 
     def get_likes_count(self, obj):
-        # Contar reacciones de "Me Gusta" para este comentario
-        # Nota: usamos reaction_set aquí porque Reaction tiene una GenericForeignKey
-        # La relación inversa se llama 'reaction_set' por defecto
-        return obj.reaction_set.filter(is_like=True).count()
+        # Accede a las reacciones a través del ContentType del Comment y el ID del objeto
+        comment_content_type = ContentType.objects.get_for_model(Comment)
+        return Reaction.objects.filter(
+            content_type=comment_content_type,
+            object_id=obj.id,
+            is_like=True
+        ).count()
 
     def get_dislikes_count(self, obj):
-        # Contar reacciones de "No Me Gusta" para este comentario
-        return obj.reaction_set.filter(is_like=False).count()
+        comment_content_type = ContentType.objects.get_for_model(Comment)
+        return Reaction.objects.filter(
+            content_type=comment_content_type,
+            object_id=obj.id,
+            is_like=False
+        ).count()
 
 class ReactionSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True) # El usuario que reacciona
-    # `content_object` es una GenericForeignKey, la cual no es serializable directamente por ModelSerializer.
-    # En una API, usualmente envías el ID del objeto y su tipo, no el objeto completo anidado.
-    # Para simplificar, aquí nos enfocamos en crear la reacción, no en ver el objeto completo al que reacciona.
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Reaction
         fields = ['id', 'content_type', 'object_id', 'user', 'is_like', 'created_at']
-        read_only_fields = ['user'] # El usuario se asignará automáticamente en la vista
+        read_only_fields = ['user']
