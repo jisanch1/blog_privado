@@ -45,6 +45,7 @@ steps:
   - '--port=8080'
   - '--add-cloudsql-instances=${_CLOUD_SQL_CONNECTION_NAME}' # Se obtiene del secreto
   - '--service-account=cloud-build-deployer@$PROJECT_ID.iam.gserviceaccount.com'
+  - '--max-instances=2'
   env: # Variables de entorno que se pasan a la aplicación Django en Cloud Run
   - 'DEBUG=False'
   # Construye DATABASE_URL usando las mismas variables de entorno que Cloud Build ya inyectó
