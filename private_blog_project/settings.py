@@ -10,23 +10,50 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+# Inicializar django-environ
+env = environ.Env(
+    # Establecer tipos por defecto y valores por defecto
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, 'django-insecure-oace-9pxtmop*cv5r1bd*4v=)yb+7j2&86s12c6qqnfmls(^98'), # Valor por defecto para desarrollo
+    # Variables para la base de datos de producción
+    DATABASE_URL=(str, 'sqlite:///db.sqlite3'), # Valor por defecto para desarrollo
+    # Variables para Cloud Run (si no se usan las del proxy)
+    CLOUD_SQL_CONNECTION_NAME=(str, None),
+    # Variables para Google Cloud Storage (para estáticos, si lo usas)
+    GS_BUCKET_NAME=(str, None),
+)
+
+# Leer el archivo .env si existe (para desarrollo local)
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-oace-9pxtmop*cv5r1bd*4v=)yb+7j2&86s12c6qqnfmls(^98'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+# Configuración de ALLOWED_HOSTS
+# En producción, Cloud Run usa el dominio del servicio.
+# En desarrollo, puede ser '127.0.0.1' o el dominio de tu máquina.
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost'] # Valores por defecto para desarrollo
 
+# Si estamos en un entorno de Cloud Run (identificado por la variable K_SERVICE)
+# O si DEBUG está en False (indicando producción)
+if not DEBUG:
+    # Ajustar ALLOWED_HOSTS para Cloud Run
+    ALLOWED_HOSTS = [env('K_SERVICE', default='')] # K_SERVICE es el nombre del servicio en Cloud Run
+    # Puedes añadir un dominio personalizado si lo configuras
+    # ALLOWED_HOSTS.append('tu-dominio-personalizado.com')
+    ALLOWED_HOSTS.append(os.environ.get('CLOUD_RUN_HOSTNAME')) # El hostname real de Cloud Run
+    ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host] # Eliminar vacíos
 
 # Application definition
 
@@ -89,15 +116,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'private_blog_project.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# Configuración de la base de datos
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db(), # Lee la URL de la base de datos de la variable DATABASE_URL
 }
+
+# Si estamos en un entorno de Cloud Run, ajustamos la conexión a Cloud SQL
+if os.getenv('CLOUD_SQL_CONNECTION_NAME'): # Esta variable la estableceremos en Cloud Run
+    DATABASES['default']['HOST'] = '127.0.0.1' # El proxy de Cloud SQL escucha en localhost
+    DATABASES['default']['PORT'] = '5432' # Puerto por defecto de PostgreSQL
+    # Las credenciales se obtienen de DATABASE_URL o de variables de entorno separadas
+    # DATABASE_URL debería ser 'postgres://USER:PASSWORD@/DBNAME?host=/cloudsql/CLOUD_SQL_CONNECTION_NAME'
+    # O si usas el proxy localmente: 'postgres://USER:PASSWORD@127.0.0.1:5432/DBNAME'
+
 
 
 # Password validation
