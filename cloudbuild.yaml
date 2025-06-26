@@ -74,3 +74,8 @@ availableSecrets:
     env: '_DB_NAME_APP'
   - versionName: projects/$PROJECT_ID/secrets/cloud-sql-connection-name/versions/latest # <-- $PROJECT_ID aquí
     env: '_CLOUD_SQL_CONNECTION_NAME_APP'
+
+# Opciones de Log
+options:
+  logging: CLOUD_LOGGING_ONLY # Le dice a Cloud Build que envíe los logs solo a Cloud Logging (Stackdriver)
+  # logsBucket: 'gs://YOUR_PROJECT_ID_cloudbuild_logs' # Opcional: si quieres un bucket específico.
