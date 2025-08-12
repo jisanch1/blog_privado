@@ -31,6 +31,7 @@ router.register(r'reactions', blog_views.ReactionViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/content-types/', blog_views.content_type_ids),
     path('api/', include(router.urls)), # Incluye las URLs generadas por el router de DRF
     path('api-auth/', include('rest_framework.urls')), # Opcional: URLs para el login/logout en el navegador de DRF
     path('api/token-auth/', obtain_auth_token), # Endpoint para obtener un token de autenticación
