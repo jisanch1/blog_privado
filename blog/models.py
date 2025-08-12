@@ -2,8 +2,8 @@
 
 from django.db import models
 from django.contrib.auth.models import User # Importamos el modelo de usuario de Django
-from django.contrib.contenttypes.fields import GenericForeignKey # Importa GenericForeignKey
-from django.contrib.contenttypes.models import ContentType # ¡Importa ContentType desde aquí!
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation  # Importa GenericForeignKey
+from django.contrib.contenttypes.models import ContentType  # ¡Importa ContentType desde aquí!
 
 
 # Modelo para las publicaciones del blog
@@ -13,6 +13,7 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_posts') # Relación con el autor (tú)
     created_at = models.DateTimeField(auto_now_add=True) # Fecha y hora de creación (automático)
     updated_at = models.DateTimeField(auto_now=True) # Fecha y hora de última actualización (automático)
+    reactions = GenericRelation('Reaction')
 
     class Meta:
         ordering = ['-created_at'] # Ordenar los posts por fecha de creación descendente
@@ -26,6 +27,7 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_comments') # Relación con el autor del comentario
     content = models.TextField() # Contenido del comentario
     created_at = models.DateTimeField(auto_now_add=True) # Fecha y hora de creación (automático)
+    reactions = GenericRelation('Reaction')
 
     class Meta:
         ordering = ['created_at'] # Ordenar los comentarios por fecha de creación ascendente
