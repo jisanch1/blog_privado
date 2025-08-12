@@ -8,6 +8,7 @@ from .serializers import PostSerializer, CommentSerializer, ReactionSerializer
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count, Q
 
 # Permisos personalizados
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -35,6 +36,12 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
+    def get_queryset(self):
+        return Post.objects.annotate(
+            likes_count=Count('reactions', filter=Q(reactions__is_like=True)),
+            dislikes_count=Count('reactions', filter=Q(reactions__is_like=False)),
+        )
+
     def perform_create(self, serializer):
         # Asigna automáticamente el usuario autenticado como autor del post
         serializer.save(author=self.request.user)
@@ -43,6 +50,12 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        return Comment.objects.annotate(
+            likes_count=Count('reactions', filter=Q(reactions__is_like=True)),
+            dislikes_count=Count('reactions', filter=Q(reactions__is_like=False)),
+        )
 
     def perform_create(self, serializer):
         # Asigna automáticamente el usuario autenticado como autor del comentario
