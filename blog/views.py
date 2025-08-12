@@ -2,7 +2,7 @@
 
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from .models import Post, Comment, Reaction
 from .serializers import PostSerializer, CommentSerializer, ReactionSerializer
 from django.contrib.auth.models import User
@@ -104,3 +104,13 @@ class ReactionViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED) # Método no permitido
+
+
+@api_view(['GET'])
+def content_type_ids(request):
+    """Retorna los IDs de ContentType para Post y Comment."""
+    data = {
+        'post': ContentType.objects.get_for_model(Post).id,
+        'comment': ContentType.objects.get_for_model(Comment).id,
+    }
+    return Response(data)
