@@ -51,7 +51,17 @@ class Reaction(models.Model):
 
     class Meta:
         # Asegura que un usuario solo pueda reaccionar una vez a un objeto específico
-        unique_together = ('content_type', 'object_id', 'user')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['content_type', 'object_id', 'user'],
+                name='unique_reaction'
+            )
+        ]
+
+        # Optimiza consultas y borrados filtrando por el objeto relacionado
+        indexes = [
+            models.Index(fields=['content_type', 'object_id'])
+        ]
 
     def __str__(self):
         reaction_type = "Like" if self.is_like else "Dislike"
