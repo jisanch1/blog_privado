@@ -67,44 +67,35 @@ class ReactionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsReactionOwnerOrReadOnly] # Solo usuarios autenticados pueden crear reacciones
 
     def perform_create(self, serializer):
-        # Asegúrate de que el usuario solo pueda reaccionar a posts o comentarios.
-        # Y que solo pueda haber una reacción por usuario por objeto.
+        serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         content_type = serializer.validated_data['content_type']
         object_id = serializer.validated_data['object_id']
         is_like = serializer.validated_data['is_like']
 
-        # Verifica si ya existe una reacción del mismo usuario para este objeto
-        existing_reaction = Reaction.objects.filter(
-            user=self.request.user,
+        reaction, created = Reaction.objects.get_or_create(
+            user=request.user,
             content_type=content_type,
-            object_id=object_id
-        ).first()
+            object_id=object_id,
+            defaults={'is_like': is_like}
+        )
 
-        if existing_reaction:
-            # Si la reacción existente es del mismo tipo (like/dislike), la elimina (toggle)
-            if existing_reaction.is_like == is_like:
-                existing_reaction.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT) # No Content si se elimina la reacción
-            else:
-                # Si la reacción existente es del tipo opuesto, la actualiza
-                existing_reaction.is_like = is_like
-                existing_reaction.save()
-                serializer = self.get_serializer(existing_reaction)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            # Si no existe una reacción, crea una nueva
-            serializer.save(user=self.request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if not created:
+            if reaction.is_like == is_like:
+                reaction.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            Reaction.objects.filter(pk=reaction.pk).update(is_like=is_like)
+            reaction.refresh_from_db()
+            updated_serializer = self.get_serializer(reaction)
+            return Response(updated_serializer.data, status=status.HTTP_200_OK)
 
-    def create(self, request, *args, **kwargs):
-        # Sobreescribimos create para manejar la lógica de "toggle" o actualizar reacción
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        response = self.perform_create(serializer) # Llamar a perform_create que ahora devuelve la Response
-        if response: # Si perform_create devolvió una Response (delete/update), la usamos
-            return response
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        created_serializer = self.get_serializer(reaction)
+        headers = self.get_success_headers(created_serializer.data)
+        return Response(created_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     # Solo permitimos eliminar reacciones, no actualizarlas directamente por PUT/PATCH
     # La lógica de "cambiar tipo de reacción" se maneja en el `create`
