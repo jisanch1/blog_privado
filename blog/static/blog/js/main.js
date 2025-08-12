@@ -1,6 +1,7 @@
 // my_private_blog/blog/static/blog/js/main.js
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/'; // URL base de tu API Django
+// Determina la URL base de la API desde el atributo data-api-base o usa '/api/' por defecto
+const API_BASE_URL = document.getElementById('app')?.dataset.apiBase || '/api/';
 
 // Elementos del DOM
 const loginSection = document.getElementById('login-section');
@@ -11,6 +12,9 @@ const logoutButton = document.getElementById('logout-button');
 const postsList = document.getElementById('posts-list');
 
 let authToken = localStorage.getItem('authToken'); // Recupera el token si existe
+
+// Mapeo dinámico de ContentType IDs
+let contentTypeMap = {};
 
 // --- Funciones de Autenticación ---
 
@@ -141,6 +145,17 @@ async function apiFetch(url, options = {}) {
     return response;
 }
 
+// Obtiene los IDs de ContentType para posts y comentarios
+async function fetchContentTypeMap() {
+    try {
+        const response = await apiFetch(`${API_BASE_URL}content-types/`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        contentTypeMap = await response.json();
+    } catch (error) {
+        console.error('Error al obtener ContentType IDs:', error);
+    }
+}
+
 
 async function fetchPosts() {
     try {
@@ -186,17 +201,8 @@ async function postComment(postId, content) {
 
 async function postReaction(contentType, objectId, isLike) {
     try {
-        // --- ADVERTENCIA: IDs de ContentType ---
-        // Estos IDs (10 y 11) son EJEMPLOS.
-        // DEBES OBTENER LOS IDs REALES DE TU INSTANCIA DE DJANGO ADMIN
-        // (Ve a /admin/ y en Content Types, busca 'blog | post' y 'blog | comment')
-        // Si no son correctos, las reacciones no se guardarán.
-        let typeId;
-        if (contentType === 'post') {
-            typeId = 10; // <<-- VERIFICAR ESTE ID
-        } else if (contentType === 'comment') {
-            typeId = 11; // <<-- VERIFICAR ESTE ID
-        } else {
+        const typeId = contentTypeMap[contentType];
+        if (!typeId) {
             throw new Error('Tipo de contenido no soportado para reacción.');
         }
 
@@ -236,6 +242,9 @@ async function postReaction(contentType, objectId, isLike) {
 
 async function displayBlogContent() {
     if (isAuthenticated()) {
+        if (!contentTypeMap.post || !contentTypeMap.comment) {
+            await fetchContentTypeMap();
+        }
         loginSection.style.display = 'none';
         blogContentSection.style.display = 'block';
         postsList.innerHTML = '<p>Cargando publicaciones...</p>'; // Mensaje de carga
